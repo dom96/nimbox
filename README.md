@@ -10,15 +10,13 @@ warned.**
 
 ## Installation
 
-Nimbox is currently not in the Nimble package repository, so you have to
-install it via Git:
+Nimbox can be installed through [Nimble][nimble], Nim's package manager:
 
 ```shell
-git clone https://notabug.org/vktec/nimbox.git
-cd nimbox
-nimble install
+nimble install nimbox
 ```
 
 rb: https://github.com/gchp/rustbox
 tb: https://github.com/nsf/termbox
 nim: http://nim-lang.org/
+nimble: https://github.com/nim-lang/nimble
