@@ -1,1 +1,8 @@
 nimbox/termbox.nim
+
+examples/nimcache/
+examples/colors
+examples/cursor
+examples/dimensions
+examples/events
+examples/hello_world
