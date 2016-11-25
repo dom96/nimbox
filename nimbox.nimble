@@ -10,7 +10,7 @@ skipFiles   = @["nimbox/.keep"]
 
 requires "nim >= 0.14.3"
 
-proc init() =
+task wrap, "Create low-level termbox wrapper":
   when defined(windows):
     echo "\x1B[33mNimbox doesn't work on Windows, sorry!\x1B[0m"
     quit 1
@@ -51,13 +51,4 @@ proc init() =
   var nimbuf = "{.passl: \"-Wl,-Bstatic -ltermbox -Wl,-Bdynamic\", emit: \"typedef struct tb_event tb_event;\".}\n"
   nimbuf &= readFile("nimbox/termbox.nim")
   writeFile("nimbox/termbox.nim", nimbuf)
-
-task init, "Create low-level termbox wrapper":
-  init()
-
-before install:
-  init()
-
-before build:
-  init()
 

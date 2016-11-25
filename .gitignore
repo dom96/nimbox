@@ -1,5 +1,3 @@
-nimbox/termbox.nim
-
 examples/nimcache/
 examples/colors
 examples/cursor
