@@ -19,8 +19,8 @@ installed from the Nimble package listing.
 nimble install https://notabug.org/vktec/nimbox.git
 ```
 
-rb: https://github.com/gchp/rustbox
-tb: https://github.com/nsf/termbox
-nim: http://nim-lang.org/
-nimble: https://github.com/nim-lang/nimble
-nimblebug: https://github.com/nim-lang/nimble/issues/280
+[rb]: https://github.com/gchp/rustbox
+[tb]: https://github.com/nsf/termbox
+[nim]: http://nim-lang.org/
+[nimble]: https://github.com/nim-lang/nimble
+[nimblebug]: https://github.com/nim-lang/nimble/issues/280
