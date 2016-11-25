@@ -3,7 +3,7 @@ import strutils
 
 version     = "0.1.0"
 author      = "Samadi van Koten"
-description = "A Rustbox-inspired wrapper for termbox"
+description = "A Rustbox-inspired termbox wrapper"
 license     = "MIT"
 skipDirs    = @["examples"]
 skipFiles   = @["nimbox/.keep"]
