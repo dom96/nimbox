@@ -29,10 +29,10 @@ type
     End
     Pgup
     Pgdn
-    ArrowUp
-    ArrowDown
-    ArrowLeft
-    ArrowRight
+    Up
+    Down
+    Left
+    Right
 
     Escape
     Space
@@ -219,10 +219,10 @@ proc toEvent(kind: cint, evt: ref TbEvent): Event =
           of TB_KEY_END: sym = Symbol.End
           of TB_KEY_PGUP: sym = Symbol.Pgup
           of TB_KEY_PGDN: sym = Symbol.Pgdn
-          of TB_KEY_ARROW_UP: sym = Symbol.ArrowUp
-          of TB_KEY_ARROW_DOWN: sym = Symbol.ArrowDown
-          of TB_KEY_ARROW_LEFT: sym = Symbol.ArrowLeft
-          of TB_KEY_ARROW_RIGHT: sym = Symbol.ArrowRight
+          of TB_KEY_ARROW_UP: sym = Symbol.Up
+          of TB_KEY_ARROW_DOWN: sym = Symbol.Down
+          of TB_KEY_ARROW_LEFT: sym = Symbol.Left
+          of TB_KEY_ARROW_RIGHT: sym = Symbol.Right
 
           # Control + key
           of TB_KEY_CTRL_2:
