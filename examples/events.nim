@@ -15,8 +15,8 @@ when isMainModule:
     evt = nb.peekEvent(1000)
     case evt.kind:
       of EventType.Key:
-        if evt.key.sym == Symbol.Escape:
+        if evt.sym == Symbol.Escape:
           break
-        ch = evt.key.ch
+        ch = evt.ch
       else: discard
 

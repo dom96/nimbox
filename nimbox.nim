@@ -6,9 +6,10 @@ type
   Modifier* {.pure.} = enum
     Ctrl
     Alt
-    Motion
 
   Symbol* {.pure.} = enum
+    Character
+
     F1
     F2
     F3
@@ -33,23 +34,20 @@ type
     ArrowLeft
     ArrowRight
 
-    MouseLeft
-    MouseRight
-    MouseMiddle
-    MouseRelease
-    MouseWheelUp
-    MouseWheelDown
-
     Escape
     Space
     Tab
     Enter
     Backspace
 
-  Key = object of RootObj
-    mods*: seq[Modifier]
-    sym*: Symbol
-    ch*: char
+  Mouse* {.pure.} = enum
+    Motion
+    Left
+    Right
+    Middle
+    Release
+    WheelUp
+    WheelDown
 
   EventType* {.pure.} = enum
     None # Better than a nil Event, because it can be matched with case
@@ -58,9 +56,17 @@ type
     Mouse
 
   Event* = object of RootObj
-    kind*: EventType
-    key*: Key
-    xy*: (int, int) # Dimensions or position
+    case kind*: EventType
+    of EventType.Key:
+      mods*: seq[Modifier]
+      sym*: Symbol
+      ch*: char
+    of EventType.Mouse:
+      action*: Mouse
+      x*, y*: uint
+    of EventType.Resize:
+      w*, h*: uint
+    of EventType.None: discard
 
   NimboxError* = object of Exception
   UnsupportedTerminalError* = object of NimboxError
@@ -68,6 +74,8 @@ type
   PipeTrapError* = object of NimboxError
   UnknownEventTypeError = object of NimboxError
   UnknownKeyError = object of NimboxError
+  UnknownMouseActionError = object of NimboxError
+
 
   Color* = enum
     clrDefault = TB_DEFAULT
@@ -178,167 +186,183 @@ proc toEvent(kind: cint, evt: ref TbEvent): Event =
     of -1: raise newException(NimboxError, "") # Unknown error
     else: raise newException(UnknownEventTypeError, "")
 
-  # Keys
-  var key = Key(mods: @[], ch: chr(evt.ch))
-  if (evt.`mod` and TB_MOD_ALT) != 0:
-      key.mods.add(Modifier.Alt)
-  if (evt.`mod` and TB_MOD_MOTION) != 0:
-      key.mods.add(Modifier.Motion)
+  case evtKind:
+    of EventType.Key:
+      var
+        mods: seq[Modifier] = @[]
+        ch = chr(evt.ch)
+        sym = Symbol.Character
 
-  if key.ch == '\0' and (evtKind == EventType.Key or evtKind == EventType.Mouse):
-    case evt.key:
-      # Mouse
-      of TB_KEY_MOUSE_LEFT: key.sym = Symbol.MouseLeft
-      of TB_KEY_MOUSE_RIGHT: key.sym = Symbol.MouseRight
-      of TB_KEY_MOUSE_MIDDLE: key.sym = Symbol.MouseMiddle
-      of TB_KEY_MOUSE_RELEASE: key.sym = Symbol.MouseRelease
-      of TB_KEY_MOUSE_WHEEL_UP: key.sym = Symbol.MouseWheelUp
-      of TB_KEY_MOUSE_WHEEL_DOWN: key.sym = Symbol.MouseWheelDown
+      if (evt.`mod` and TB_MOD_ALT) != 0:
+          mods.add(Modifier.Alt)
 
-      # Function keys
-      of TB_KEY_F1: key.sym = Symbol.F1
-      of TB_KEY_F2: key.sym = Symbol.F2
-      of TB_KEY_F3: key.sym = Symbol.F3
-      of TB_KEY_F4: key.sym = Symbol.F4
-      of TB_KEY_F5: key.sym = Symbol.F5
-      of TB_KEY_F6: key.sym = Symbol.F6
-      of TB_KEY_F7: key.sym = Symbol.F7
-      of TB_KEY_F8: key.sym = Symbol.F8
-      of TB_KEY_F9: key.sym = Symbol.F9
-      of TB_KEY_F10: key.sym = Symbol.F10
-      of TB_KEY_F11: key.sym = Symbol.F11
-      of TB_KEY_F12: key.sym = Symbol.F12
+      if ch == '\0':
+        case evt.key:
+          # Function keys
+          of TB_KEY_F1: sym = Symbol.F1
+          of TB_KEY_F2: sym = Symbol.F2
+          of TB_KEY_F3: sym = Symbol.F3
+          of TB_KEY_F4: sym = Symbol.F4
+          of TB_KEY_F5: sym = Symbol.F5
+          of TB_KEY_F6: sym = Symbol.F6
+          of TB_KEY_F7: sym = Symbol.F7
+          of TB_KEY_F8: sym = Symbol.F8
+          of TB_KEY_F9: sym = Symbol.F9
+          of TB_KEY_F10: sym = Symbol.F10
+          of TB_KEY_F11: sym = Symbol.F11
+          of TB_KEY_F12: sym = Symbol.F12
 
-      # Motion keys
-      of TB_KEY_INSERT: key.sym = Symbol.Insert
-      of TB_KEY_DELETE: key.sym = Symbol.Delete
-      of TB_KEY_HOME: key.sym = Symbol.Home
-      of TB_KEY_END: key.sym = Symbol.End
-      of TB_KEY_PGUP: key.sym = Symbol.Pgup
-      of TB_KEY_PGDN: key.sym = Symbol.Pgdn
-      of TB_KEY_ARROW_UP: key.sym = Symbol.ArrowUp
-      of TB_KEY_ARROW_DOWN: key.sym = Symbol.ArrowDown
-      of TB_KEY_ARROW_LEFT: key.sym = Symbol.ArrowLeft
-      of TB_KEY_ARROW_RIGHT: key.sym = Symbol.ArrowRight
+          # Motion keys
+          of TB_KEY_INSERT: sym = Symbol.Insert
+          of TB_KEY_DELETE: sym = Symbol.Delete
+          of TB_KEY_HOME: sym = Symbol.Home
+          of TB_KEY_END: sym = Symbol.End
+          of TB_KEY_PGUP: sym = Symbol.Pgup
+          of TB_KEY_PGDN: sym = Symbol.Pgdn
+          of TB_KEY_ARROW_UP: sym = Symbol.ArrowUp
+          of TB_KEY_ARROW_DOWN: sym = Symbol.ArrowDown
+          of TB_KEY_ARROW_LEFT: sym = Symbol.ArrowLeft
+          of TB_KEY_ARROW_RIGHT: sym = Symbol.ArrowRight
 
-      # Control + key
-      of TB_KEY_CTRL_2:
-        key.ch = '2'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_4:
-        key.ch = '4'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_5:
-        key.ch = '5'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_6:
-        key.ch = '6'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_7:
-        key.ch = '7'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_8:
-        key.ch = '8'
-        key.sym = Symbol.Backspace
-        key.mods.add(Modifier.Ctrl)
+          # Control + key
+          of TB_KEY_CTRL_2:
+            ch = '2'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_4:
+            ch = '4'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_5:
+            ch = '5'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_6:
+            ch = '6'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_7:
+            ch = '7'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_8:
+            ch = '8'
+            sym = Symbol.Backspace
+            mods.add(Modifier.Ctrl)
 
-      of TB_KEY_CTRL_A:
-        key.ch = 'A'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_B:
-        key.ch = 'B'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_C:
-        key.ch = 'C'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_D:
-        key.ch = 'D'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_E:
-        key.ch = 'E'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_F:
-        key.ch = 'F'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_G:
-        key.ch = 'G'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_H:
-        key.ch = 'H'
-        key.sym = Symbol.Backspace
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_I:
-        key.ch = 'I'
-        key.sym = Symbol.Tab
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_J:
-        key.ch = 'J'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_K:
-        key.ch = 'K'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_L:
-        key.ch = 'L'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_M:
-        key.ch = 'M'
-        key.sym = Symbol.Enter
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_N:
-        key.ch = 'N'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_O:
-        key.ch = 'O'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_P:
-        key.ch = 'P'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_Q:
-        key.ch = 'Q'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_R:
-        key.ch = 'R'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_S:
-        key.ch = 'S'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_T:
-        key.ch = 'T'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_U:
-        key.ch = 'U'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_V:
-        key.ch = 'V'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_W:
-        key.ch = 'W'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_X:
-        key.ch = 'X'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_Y:
-        key.ch = 'Y'
-        key.mods.add(Modifier.Ctrl)
-      of TB_KEY_CTRL_Z:
-        key.ch = 'Z'
-        key.mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_A:
+            ch = 'A'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_B:
+            ch = 'B'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_C:
+            ch = 'C'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_D:
+            ch = 'D'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_E:
+            ch = 'E'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_F:
+            ch = 'F'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_G:
+            ch = 'G'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_H:
+            ch = 'H'
+            sym = Symbol.Backspace
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_I:
+            ch = 'I'
+            sym = Symbol.Tab
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_J:
+            ch = 'J'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_K:
+            ch = 'K'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_L:
+            ch = 'L'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_M:
+            ch = 'M'
+            sym = Symbol.Enter
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_N:
+            ch = 'N'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_O:
+            ch = 'O'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_P:
+            ch = 'P'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_Q:
+            ch = 'Q'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_R:
+            ch = 'R'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_S:
+            ch = 'S'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_T:
+            ch = 'T'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_U:
+            ch = 'U'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_V:
+            ch = 'V'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_W:
+            ch = 'W'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_X:
+            ch = 'X'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_Y:
+            ch = 'Y'
+            mods.add(Modifier.Ctrl)
+          of TB_KEY_CTRL_Z:
+            ch = 'Z'
+            mods.add(Modifier.Ctrl)
 
-      # Spacing
-      of TB_KEY_SPACE: key.sym = Symbol.Space
+          # Spacing
+          of TB_KEY_SPACE: sym = Symbol.Space
 
-      # Control
-      of TB_KEY_ESC:
-        key.sym = Symbol.Escape
-        key.ch = '['
-        key.mods.add(Modifier.Ctrl)
+          # Control
+          of TB_KEY_ESC:
+            sym = Symbol.Escape
+            ch = '['
+            mods.add(Modifier.Ctrl)
 
-      else: raise newException(UnknownKeyError, $evt.key)
+          else: raise newException(UnknownKeyError, $evt.key)
 
-  Event(
-    kind: evtKind,
-    key: key,
-  )
+      Event(kind: evtKind, mods: mods, ch: ch, sym: sym)
+
+    of EventType.Mouse:
+      var action: Mouse
+      if (evt.`mod` and TB_MOD_MOTION) != 0:
+        action = Mouse.Motion
+
+      case evt.key:
+        # Mouse
+        of TB_KEY_MOUSE_LEFT: action = Mouse.Left
+        of TB_KEY_MOUSE_RIGHT: action = Mouse.Right
+        of TB_KEY_MOUSE_MIDDLE: action = Mouse.Middle
+        of TB_KEY_MOUSE_RELEASE: action = Mouse.Release
+        of TB_KEY_MOUSE_WHEEL_UP: action = Mouse.WheelUp
+        of TB_KEY_MOUSE_WHEEL_DOWN: action = Mouse.WheelDown
+        else: raise newException(UnknownMouseActionError, $evt.key)
+
+      Event(kind: evtKind, action: action,
+            x: cast[uint](evt.x), y: cast[uint](evt.y))
+
+    of EventType.Resize:
+      Event(kind: evtKind, w: cast[uint](evt.w), h: cast[uint](evt.h))
+
+    of EventType.None:
+      Event(kind: evtKind)
 
 proc peekEvent*(_: Nimbox, timeout: int): Event =
   var evt: ref TbEvent
