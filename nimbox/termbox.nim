@@ -1,6 +1,7 @@
-{.passl: "-Wl,-Bstatic -ltermbox -Wl,-Bdynamic", emit: "typedef struct tb_event tb_event;".}
-
-
+when defined(linux):
+  {.passl: "-Wl,-Bstatic -ltermbox -Wl,-Bdynamic", emit: "typedef struct tb_event tb_event;".}
+else:
+  {.passl: "-ltermbox", emit: "typedef struct tb_event tb_event;".}
 
 const
   TB_KEY_F1* = (0x0000FFFF - 0)

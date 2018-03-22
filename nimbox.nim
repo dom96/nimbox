@@ -162,7 +162,7 @@ proc print*[T](_: Nimbox, x, y: int, text: string,
     yInt = cast[cint](y)
 
   for i, c in pairs(text):
-    tbChangeCell(cast[cint](x + i), yInt, ord(c), fgInt, bgInt)
+    tbChangeCell(cast[cint](x + i), yInt, ord(c).uint32, fgInt, bgInt)
 
 proc print*(nb: Nimbox, x, y: int, text: string,
             fg: Color = clrDefault, bg: Color = clrDefault) =
@@ -338,7 +338,7 @@ proc toEvent(kind: cint, evt: ref TbEvent): Event =
 
           else: raise newException(UnknownKeyError, $evt.key)
 
-      Event(kind: evtKind, mods: mods, ch: ch, sym: sym)
+      Event(kind: EventType.Key, mods: mods, ch: ch, sym: sym)
 
     of EventType.Mouse:
       var action: Mouse
@@ -355,14 +355,14 @@ proc toEvent(kind: cint, evt: ref TbEvent): Event =
         of TB_KEY_MOUSE_WHEEL_DOWN: action = Mouse.WheelDown
         else: raise newException(UnknownMouseActionError, $evt.key)
 
-      Event(kind: evtKind, action: action,
+      Event(kind: EventType.Mouse, action: action,
             x: cast[uint](evt.x), y: cast[uint](evt.y))
 
     of EventType.Resize:
-      Event(kind: evtKind, w: cast[uint](evt.w), h: cast[uint](evt.h))
+      Event(kind: EventType.Resize, w: cast[uint](evt.w), h: cast[uint](evt.h))
 
     of EventType.None:
-      Event(kind: evtKind)
+      Event(kind: EventType.None)
 
 proc peekEvent*(_: Nimbox, timeout: int): Event =
   var evt: ref TbEvent
