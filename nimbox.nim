@@ -1,5 +1,7 @@
 include nimbox/termbox
 
+import unicode
+
 type
   Nimbox* = object of RootObj
 
@@ -161,8 +163,10 @@ proc print*[T](_: Nimbox, x, y: int, text: string,
     bgInt = cast[uint16](ord(bg))
     yInt = cast[cint](y)
 
-  for i, c in pairs(text):
-    tbChangeCell(cast[cint](x + i), yInt, ord(c).uint32, fgInt, bgInt)
+  var i = 0
+  for c in runes(text):
+    tbChangeCell(cast[cint](x + i), yInt, c.uint32, fgInt, bgInt)
+    i.inc()
 
 proc print*(nb: Nimbox, x, y: int, text: string,
             fg: Color = clrDefault, bg: Color = clrDefault) =
