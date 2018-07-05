@@ -5,6 +5,8 @@ import unicode
 type
   Nimbox* = object of RootObj
 
+  Colors256* = range[0..255]
+
   Modifier* {.pure.} = enum
     Ctrl
     Alt
@@ -161,6 +163,24 @@ proc print*[T](_: Nimbox, x, y: int, text: string,
   var
     fgInt = cast[uint16](ord(fg) or styleInt)
     bgInt = cast[uint16](ord(bg))
+    yInt = cast[cint](y)
+
+  var i = 0
+  for c in runes(text):
+    tbChangeCell(cast[cint](x + i), yInt, c.uint32, fgInt, bgInt)
+    i.inc()
+
+proc print*[T](_: Nimbox, x, y: int, text: string,
+               fg: Colors256, bg: Colors256, style: T = styNone) =
+  var styleInt: int
+  when style is Style:
+    styleInt = ord(style)
+  elif style is int:
+    styleInt = style
+
+  var
+    fgInt = cast[uint16](fg or styleInt)
+    bgInt = cast[uint16](bg)
     yInt = cast[cint](y)
 
   var i = 0
