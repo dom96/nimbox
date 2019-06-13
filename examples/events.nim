@@ -1,7 +1,7 @@
 import nimbox
 import os
 
-when isMainModule:
+proc main() =
   var nb = newNimbox()
   defer: nb.shutdown()
 
@@ -20,3 +20,5 @@ when isMainModule:
         ch = evt.ch
       else: discard
 
+when isMainModule:
+  main()
